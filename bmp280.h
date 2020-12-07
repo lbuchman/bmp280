@@ -31,7 +31,7 @@ class BMP280:  public SimpleEvent {
     public:
         /******************************************************************************************
          */
-        BMP280(TwoWire& _wire): SimpleEvent("bmp280"), wire(_wire) {
+        BMP280(TwoWire& _wire, boolean _noInterval = false): SimpleEvent("bmp280"), wire(_wire), noInterval(_noInterval) {
             initialized_m = bmp.begin();                  // Default initialisation, place the BMP280 into SLEEP_MODE
             bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
                             Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
@@ -79,7 +79,7 @@ class BMP280:  public SimpleEvent {
                 //  return;
             }
 
-            if(expired_interval(timer, interval)) {
+            if(expired_interval(timer, interval) || noInterval) { /* if no interval = true, ignore interval, i.e. taskScheduler is used */
                 sensors_event_t temp_event, pressure_event;
                 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
                 Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
@@ -100,7 +100,6 @@ class BMP280:  public SimpleEvent {
 
                 sensorData.altitude_m = altitude - sensorData.alt_ground_m;
                 fireEvent(kBarometeDataEvent, &sensorData);
-
             }
         }
 
@@ -137,6 +136,7 @@ class BMP280:  public SimpleEvent {
 
     private:
         TwoWire& wire;
+        boolean &noInterval;
         const static int kBarometeDataEvent = 0;
         size_t reftime = millis();
         size_t timer = millis();
