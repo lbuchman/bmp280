@@ -21,6 +21,7 @@ struct BarometerData {
     float absPressure = 0;
     float alt_ground_m = 0;
     float temperature_m = 0;
+    float seaLvelPressure = 0;
 };
 
 
@@ -55,7 +56,7 @@ class BMP280:  public SimpleEvent {
                 return;
             }
 
-            printme(NEWLINE, NO_TIMESTAMP, "pressure = %fPa, alt ground = %4.1fm, alt = %4.1fm, temp = %fC", sensorData.absPressure, sensorData.alt_ground_m, sensorData.altitude_m, sensorData.temperature_m);
+            printme(NEWLINE, NO_TIMESTAMP, "pressure = %6.2fhPa, alt ground = %4.1fm, alt = %4.1fm, temp = %fC, sea level pressure %6.2fhPa / %3.0fmmHq / %4.2finHq", sensorData.absPressure, sensorData.alt_ground_m, sensorData.altitude_m, sensorData.temperature_m, sensorData.seaLvelPressure, 0.750062 * sensorData.seaLvelPressure, 0.02953 * sensorData.seaLvelPressure);
         }
 
         /******************************************************************************************
@@ -87,7 +88,7 @@ class BMP280:  public SimpleEvent {
                 bmp_pressure->getEvent(&pressure_event);
 
                 // printme(NEWLINE, TIMESTAMP, "Resetting barometer ground altitude", LINEINFO);
-                sensorData.absPressure = pressure_event.pressure;
+                sensorData.absPressure = pressure_event.pressure + 0 * 2.87;
                 sensorData.temperature_m = temp_event.temperature;
 
                 // need to set ground alt_ground
@@ -98,6 +99,7 @@ class BMP280:  public SimpleEvent {
                     alGroundReset = true;
                 }
 
+                sensorData.seaLvelPressure = bmp.seaLevelForAltitude(110.0, sensorData.absPressure);
                 sensorData.altitude_m = altitude - sensorData.alt_ground_m;
                 fireEvent(kBarometeDataEvent, &sensorData);
             }
