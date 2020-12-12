@@ -32,7 +32,8 @@ class BMP280:  public SimpleEvent {
     public:
         /******************************************************************************************
          */
-        BMP280(TwoWire& _wire, boolean _noInterval = false): SimpleEvent("bmp280"), wire(_wire), noInterval(_noInterval) {
+        BMP280(TwoWire& _wire, int _ledPin, boolean _noInterval = false): SimpleEvent("bmp280"), wire(_wire), noInterval(_noInterval) {
+            ledPin = _ledPin;
             initialized_m = bmp.begin();                  // Default initialisation, place the BMP280 into SLEEP_MODE
             bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
                             Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
@@ -76,11 +77,14 @@ class BMP280:  public SimpleEvent {
         /******************************************************************************************
          */
         void run() {
+            static int ledState = 0;
             if(!initialized_m) {
                 //  return;
             }
 
             if(expired_interval(timer, interval) || noInterval) { /* if no interval = true, ignore interval, i.e. taskScheduler is used */
+                digitalWrite(ledPin, ledState);
+                ledState ^= 1;
                 sensors_event_t temp_event, pressure_event;
                 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
                 Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
@@ -99,7 +103,7 @@ class BMP280:  public SimpleEvent {
                     alGroundReset = true;
                 }
 
-                sensorData.seaLvelPressure = bmp.seaLevelForAltitude(110.0, sensorData.absPressure);
+                sensorData.seaLvelPressure = bmp.seaLevelForAltitude(99.0, sensorData.absPressure);
                 sensorData.altitude_m = altitude - sensorData.alt_ground_m;
                 fireEvent(kBarometeDataEvent, &sensorData);
             }
@@ -138,6 +142,7 @@ class BMP280:  public SimpleEvent {
 
     private:
         TwoWire& wire;
+        int ledPin;
         boolean &noInterval;
         const static int kBarometeDataEvent = 0;
         size_t reftime = millis();
